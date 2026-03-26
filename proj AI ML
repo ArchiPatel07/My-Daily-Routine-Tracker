@@ -1,0 +1,280 @@
+import json
+import os
+import random
+
+DATA_FILE = os.path.join(os.path.dirname(__file__),"data.json")
+
+def load_data():
+    if not os.path.exists(DATA_FILE):
+        return []
+    try:
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return []
+
+
+def save_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+def get_number(msg):
+    while True:
+        try:
+            val = float(input(msg))
+            if val < 0:
+                print("Value cannot be negative.")
+                continue
+            return val
+        except:
+            print("Enter a valid number.")
+
+
+def get_mood():
+    moods = ["happy", "normal" , "tired", "stressed"]
+    while True:
+        mood = input("Mood (happy/normal/tired/stressed): ").lower()
+        if mood in moods:
+            return mood
+        print("Invalid mood.")
+
+
+# ---------- ADD ENTRY ----------
+def add_entry(data):
+    print("\n--- Add Entry ---")
+
+    day = input("Enter day (Mon/Tue etc): ")
+    study = get_number("Study hours: ")
+    college = get_number("College time in hours: ")
+    sleep = get_number("Sleep hours: ")
+    screen = get_number("Screen time: ")
+    mood = get_mood()
+
+    entry = {
+        "day": day,
+        "study": study,
+        "college": college,
+        "sleep": sleep,
+        "screen": screen,
+        "mood": mood
+    }
+
+    data.append(entry)
+    save_data(data)
+
+    print("Entry saved successfully!\n")
+# ---------- VIEW ----------
+def view_entries(data):
+    print("\n--- All Entries ---")
+
+    if not data:
+        print("No data available.\n")
+        return
+
+    for i, e in enumerate(data, 1):
+       print(f"{i}. {e.get('day','-')} | Study: {e.get('study',0)}h | College: {e.get('college',0)}h | Sleep: {e.get('sleep',0)}h | Screen: {e.get('screen',0)}h | Mood: {e.get('mood','-')}")
+    print()
+# ---------- DELETE ----------
+def delete_entry(data):
+    view_entries(data)
+
+    if not data:
+        return
+
+    try:
+        choice = int(input("Enter entry number to delete: "))
+        if 1 <= choice <= len(data):
+            removed = data.pop(choice - 1)
+            save_data(data)
+            print(f"Deleted entry for {removed['day']}\n")
+        else:
+            print("Invalid choice.\n")
+    except:
+        print("Enter a valid number.\n")
+
+
+# ---------- ANALYSIS ----------
+def analyze_data(data):
+    print("\n--- Analysis Report ---")
+
+    if not data:
+        print("No data to analyze.\n")
+        return
+
+    total_study = sum(d.get("study", 0) for d in data)
+    total_sleep = sum(d.get("sleep", 0) for d in data)
+    total_college = sum(d.get("college", 0) for d in data)
+    total_screen = sum(d.get("screen", 0) for d in data)
+
+    avg_study = total_study / len(data)
+    avg_college = total_college / len(data)
+    avg_sleep = total_sleep / len(data)
+    avg_screen = total_screen / len(data)
+
+    print(f"Average Study Hours: {avg_study:.2f}")
+    print(f"Average College Hours: {avg_college:.2f}")
+    print(f"Average Sleep Hours: {avg_sleep:.2f}")
+    print(f"Average Screen Time: {avg_screen:.2f}")
+
+    best_day = max(data, key=lambda x: x.get("study", 0))
+    print(f"Most Productive Day: {best_day.get('day')}")
+
+    mood_count = {}
+    for d in data:
+        mood = d.get("mood", "unknown")
+        mood_count[mood] = mood_count.get(mood, 0) + 1
+    print("\nMood Distribution:")
+    for mood, count in mood_count.items():
+        print(f"{mood}: {count} days")
+    # Productivity Score
+    score = avg_college + avg_study - (0.5 * avg_screen)
+    print(f"Productivity Score: {score:.2f}")
+
+    print("\n--- Insights ---")
+
+    if avg_study < 2:
+        print("I think I need to study more")
+    elif avg_study > 5:
+        print("Good job! study is going well")
+    else:
+        print("Study is okay, can improve")
+
+    if avg_sleep < 6:
+        print("You need better sleep.")
+    elif avg_sleep > 9 :
+        print("More sleep can make you feel tired")
+    else:
+        print("Sleep schedule is okay.")
+
+    if avg_screen > 5:
+        print("Too much instagram aand youtube can destroy your placements")
+
+    print()
+
+
+def motivation():
+    quotes = [
+        "Keep going ",
+        "Small progress is still progress",
+        "Don't give up!",
+        "You are best",
+        "Consistency is key"
+    ]
+    import random
+    print("\nMotivation:", random.choice(quotes))
+
+# ---------- SMART PREDICTION (ML-LIKE) ----------
+def predict_mood(data):
+    print("\n--- Smart Mood Prediction ---")
+
+    if len(data) < 3:
+        print("Add more data for better prediction.\n")
+        return
+
+    study = get_number("Study hours: ")
+    sleep = get_number("Sleep hours: ")
+    screen = get_number("Screen time: ")
+    college = get_number("College time: ")
+
+    avg_study = sum(d.get("study", 0) for d in data) / len(data)
+    avg_sleep = sum(d.get("sleep", 0) for d in data) / len(data)
+    avg_screen = sum(d.get("screen", 0) for d in data) / len(data)
+    avg_college = sum(d.get("college", 0) for d in data) / len(data)
+
+    avg_study = avg_study if avg_study != 0 else 1
+    avg_sleep = avg_sleep if avg_sleep != 0 else 1
+    avg_screen = avg_screen if avg_screen != 0 else 1
+    avg_college = avg_college if avg_college != 0 else 1
+
+    score = (
+        (study / avg_study) * 2 +
+        (sleep / avg_sleep) * 1.5 +
+        (college / avg_college) * 1.5 -
+        (screen / avg_screen) * 2
+    )
+
+    if score > 20:
+        mood = "happy"
+    elif score > 13:
+        mood = "normal"
+    elif score > 7:
+        mood = "tired"
+    else:
+        mood = "stressed"
+
+    print(f"\nPredicted Mood: {mood}")
+
+    # Suggestions
+    if mood == "stressed":
+        print("Suggestion: Reduce screen time and take breaks.")
+    elif mood == "tired":
+        print("Suggestion: Needs to improve your schedule.")
+    elif mood == "normal":
+        print("Suggestion: Good but can be improved.")
+    else:
+        print("Suggestion: Keep following this routine.")
+
+    print()
+
+# ---------- EXTRA FEATURE ----------
+def weekly_summary(data):
+    print("\n--- Weekly Summary ---")
+
+    if len(data) < 7:
+        print("Add at least 7 entries for weekly summary.\n")
+        return
+
+    last_week = data[-7:]
+
+    total_study = sum(d.get("study", 0) for d in last_week)
+    total_college = sum(d.get("college", 0) for d in last_week)
+    total_sleep = sum(d.get("sleep", 0) for d in last_week)
+
+    print(f"Total Study (Last 7 days): {total_study} hrs")
+    print(f"Total Sleep (Last 7 days): {total_sleep} hrs")
+    print(f"Total College (Last 7 days): {total_college} hrs")
+
+    print()
+
+
+# ---------- MAIN ----------
+def main():
+    data = load_data()
+
+    while True:
+        print("====== My Daily Routine Tracker ======")
+        print("1. Add Entry")
+        print("2. View Entries")
+        print("3. Analyze Data")
+        print("4. Delete Entry")
+        print("5. Predict Mood")
+        print("6. Weekly Summary")
+        print("7. Motivation")
+        print("8. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            add_entry(data)
+        elif choice == "2":
+            view_entries(data)
+        elif choice == "3":
+            analyze_data(data)
+        elif choice == "4":
+            delete_entry(data)
+        elif choice == "5":
+            predict_mood(data)
+        elif choice == "6":
+            weekly_summary(data)
+        elif choice == "7":
+            motivation()
+        elif choice == "8":
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice.\n")
+
+
+if __name__ == "__main__":
+    main()
